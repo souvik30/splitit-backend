@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from models import Users, ExpenseGroups, Expenses, Spenders, Borrowers, GroupMemberships
+from .models import Users, ExpenseGroups, Expenses, Spenders, Borrowers, GroupMemberships
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -44,14 +44,6 @@ class ExpensesSerializer(serializers.ModelSerializer):
         fields = ['id', 'group', 'name', 'description', 'date', 'owner', 'type']
 
 
-class ExpensesGetSerializer(serializers.ModelSerializer):
-    owner_name = serializers.CharField(source='owner.name', read_only=True)
-
-    class Meta:
-        model = Expenses
-        fields = ['id', 'group', 'name', 'description', 'date', 'owner_name', 'type']
-
-
 class SpendersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Spenders
@@ -62,3 +54,24 @@ class BorrowersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Borrowers
         fields = '__all__'
+
+
+class ExpensesGetSerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source='owner.name', read_only=True)
+    spenders = serializers.SerializerMethodField()
+    borrowers = serializers.SerializerMethodField()
+
+    def get_spenders(self, obj):
+        spenders_qs = Spenders.objects.filter(expense=obj)
+        return SpendersSerializer(spenders_qs, many=True).data
+
+    def get_borrowers(self, obj):
+        borrowers_qs = Borrowers.objects.filter(expense=obj)
+        return BorrowersSerializer(borrowers_qs, many=True).data
+
+    class Meta:
+        model = Expenses
+        fields = ['id', 'group', 'name',
+                  'description', 'date', 'owner_name', 'type',
+                  'spenders', 'borrowers']
+
