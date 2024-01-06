@@ -14,11 +14,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     queryset = ExpenseGroups.objects.all()
-    serializer_class = serializers.ExpenseGroupsGetSerializer()
+    serializer_class = serializers.ExpenseGroupsGetSerializer
     permission_classes = []
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expenses.objects.all()
-    serializer_class = serializers.ExpensesSerializer()
+    serializer_class = serializers.ExpensesSerializer
     permission_classes = []
