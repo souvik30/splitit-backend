@@ -6,15 +6,22 @@ from rest_framework.status import HTTP_200_OK
 from rest_framework.response import Response
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.views import APIView
-from .models import Users, ExpenseGroups, Expenses
+from rest_framework.decorators import action
+from .models import Users, ExpenseGroups, Expenses, GroupMemberships, Spenders, Borrowers
 from . import serializers
 from .exceptions import InvalidAuthToken
-from .authentication import get_firebase_uid, get_firebase_user
+from .authentication import get_firebase_uid, get_firebase_user, FirebaseAuthentication
+from drf_yasg.utils import swagger_auto_schema
+from .schema import schemas
+from itertools import combinations
+from .utils import calculate_borrowers_amount
 
 
 class AuthViewSet(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @swagger_auto_schema(request_body=schemas.AuthRequestSchema(),
+                         responses={200: serializers.UsersSerializer()})
     def post(self, request, format=None):
         id_token = request.data.get('idToken')
         firebase_uid = get_firebase_uid(id_token)
@@ -39,18 +46,93 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = Users.objects.all()
     serializer_class = serializers.UsersSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [FirebaseAuthentication]
 
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed("POST /user is not allowed")
 
+    @action(methods=['get'], detail=False, url_path='email')
+    @swagger_auto_schema(responses={200: serializers.UsersSerializer()},
+                         manual_parameters=[
+                             schemas.email_query_param,
+                         ])
+    def get_user_by_email(self, request):
+        email = request.query_params.get('email')
+        user = Users.objects.get(email=email)
+        return Response(data=serializers.UsersSerializer(user).data, status=HTTP_200_OK)
 
+
+@swagger_auto_schema(query_serializer=serializers.ExpenseGroupsGetSerializer(),
+                     responses={200: serializers.ExpenseGroupsSerializer()})
 class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     queryset = ExpenseGroups.objects.all()
     serializer_class = serializers.ExpenseGroupsGetSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [FirebaseAuthentication]
+
+    @action(methods=['post'], detail=True, url_path='add_user')
+    @swagger_auto_schema(request_body=schemas.AddUserToGroupRequestSchema(),
+                         responses={200: schemas.MessageResponseSchema()})
+    def add_user(self, request, pk=None):
+        user_id = request.data.get('user_id')
+        user = Users.objects.get(id=user_id)
+        GroupMemberships.objects.create(
+            group=pk,
+            user=user
+        )
+        return Response(data={"message": "Added user to group"}, status=HTTP_200_OK)
+
+    @action(methods=['get'], detail=True, url_path='expenses')
+    @swagger_auto_schema(responses={200: serializers.ExpensesGetSerializer(many=True)})
+    def expenses(self, request, pk=None):
+        expenses_for_group = ExpenseGroups.objects.filter(group=pk)
+
+        return Response(
+            data=serializers.ExpensesGetSerializer(data=expenses_for_group, many=True).data,
+            status=HTTP_200_OK
+        )
+
+    @action(methods=['get'], detail=True, url_path='balances')
+    @swagger_auto_schema(responses={200: schemas.GetBalancesResponseSchema()})
+    def balances(self, request, pk=None):
+        group_members = GroupMemberships.objects.filter(group=pk)
+        users_list = [member.user.id for member in group_members]
+        user_pairs = list(combinations(users_list, 2))
+        response = []
+        for pair in user_pairs:
+            # calculate user A -> B
+            user1, user2 = pair
+            user_2_borrowed_amount = calculate_borrowers_amount(user1, user2, users_list)
+
+            user_1_borrowed_amount = calculate_borrowers_amount(user2, user1, users_list)
+
+            if user_1_borrowed_amount > 0 or user_2_borrowed_amount > 0:
+
+                if user_1_borrowed_amount > user_2_borrowed_amount:
+                    response.append({
+                        "spender": user2,
+                        "borrower": user1,
+                        "amount": user_1_borrowed_amount - user_2_borrowed_amount
+                    })
+                else:
+                    response.append({
+                        "spender": user1,
+                        "borrower": user2,
+                        "amount": user_2_borrowed_amount - user_1_borrowed_amount
+                    })
+
+        return Response(
+            data=response,
+            status=HTTP_200_OK
+        )
 
 
+
+
+@swagger_auto_schema(query_serializer=serializers.ExpensesGetSerializer(),
+                     responses={200: serializers.ExpensesSerializer()})
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expenses.objects.all()
     serializer_class = serializers.ExpensesSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [FirebaseAuthentication]
