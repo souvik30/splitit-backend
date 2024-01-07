@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from .models import Users, ExpenseGroups, Expenses
 from . import serializers
 from .exceptions import InvalidAuthToken
-from .authentication import get_firebase_uid, FirebaseAuthentication, get_firebase_user
+from .authentication import get_firebase_uid, get_firebase_user
 
 
 class AuthViewSet(APIView):
@@ -39,7 +39,6 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = Users.objects.all()
     serializer_class = serializers.UsersSerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [FirebaseAuthentication]
 
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed("POST /user is not allowed")
@@ -49,11 +48,9 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     queryset = ExpenseGroups.objects.all()
     serializer_class = serializers.ExpenseGroupsGetSerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [FirebaseAuthentication]
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expenses.objects.all()
     serializer_class = serializers.ExpensesSerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [FirebaseAuthentication]

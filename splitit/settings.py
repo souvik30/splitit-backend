@@ -52,6 +52,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'splitit_api.authentication.FirebaseAuthentication',
+    ]
+}
+
 ROOT_URLCONF = 'splitit.urls'
 
 TEMPLATES = [

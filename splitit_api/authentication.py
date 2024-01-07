@@ -2,7 +2,7 @@ from rest_framework.authentication import BaseAuthentication
 import firebase_admin
 from firebase_admin import credentials, auth
 from django.conf import settings
-from rest_framework.authtoken.admin import User
+from .models import Users
 
 from .exceptions import NoAuthToken, InvalidAuthToken, FirebaseError
 
@@ -49,12 +49,12 @@ class FirebaseAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
         """Get the authorization Token, It raises exception when no authorization Token is given"""
-        auth_header = request.META.get("HTTP_AUTHORIZATION")
+        auth_header = request.headers.get("Authorization")
         if not auth_header:
             raise NoAuthToken("No auth token provided")
 
         id_token = auth_header.split(" ").pop()
         uid = get_firebase_uid(id_token)
 
-        user = User.objects.get(pk=uid)
+        user = Users.objects.get(pk=uid)
         return user
