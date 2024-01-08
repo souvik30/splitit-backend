@@ -103,8 +103,9 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     def add_user(self, request, pk=None):
         user_id = request.data.get('user_id')
         user = Users.objects.get(id=user_id)
+        print(int(pk))
         GroupMemberships.objects.create(
-            group=pk,
+            group=self.get_object(),
             user=user
         )
         return Response(data={"message": "Added user to group"}, status=HTTP_200_OK)
