@@ -74,7 +74,7 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         owner = self.request.user
         memberships = GroupMemberships.objects.filter(user=owner)
-        group_ids = [membership.group for membership in memberships]
+        group_ids = [membership.group.pk for membership in memberships]
         groups = ExpenseGroups.objects.filter(pk__in=group_ids)
         return groups
 
@@ -84,6 +84,12 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
         serializer = serializers.ExpenseGroupsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
+
+        # Now create a group membership
+        GroupMemberships.objects.create(
+            group=instance,
+            user=owner
+        )
         return Response(
             data=self.serializer_class(instance).data,
             status=HTTP_200_OK
