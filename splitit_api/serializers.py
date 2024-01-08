@@ -35,7 +35,7 @@ class ExpenseGroupsGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExpenseGroups
-        fields = ['id', 'name', 'description', 'owner_name', 'owner_email', 'members']
+        fields = ['id', 'name', 'type', 'description', 'owner_name', 'owner_email', 'members']
 
 
 class SpendersSerializer(serializers.ModelSerializer):

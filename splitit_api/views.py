@@ -73,7 +73,9 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         owner = self.request.user
-        groups = ExpenseGroups.objects.filter(owner=owner)
+        memberships = GroupMemberships.objects.filter(user=owner)
+        group_ids = [membership.group for membership in memberships]
+        groups = ExpenseGroups.objects.filter(pk__in=group_ids)
         return groups
 
     def create(self, request, *args, **kwargs):
