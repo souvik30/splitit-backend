@@ -57,4 +57,5 @@ class FirebaseAuthentication(BaseAuthentication):
         uid = get_firebase_uid(id_token)
 
         user = Users.objects.get(pk=uid)
-        return user
+        user.is_authenticated = True
+        return user, True

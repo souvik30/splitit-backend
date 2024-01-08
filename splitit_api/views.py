@@ -18,7 +18,8 @@ from .utils import calculate_borrowers_amount
 
 
 class AuthViewSet(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = []
+    authentication_classes = []
 
     @swagger_auto_schema(request_body=schemas.AuthRequestSchema(),
                          responses={200: serializers.UsersSerializer()})
@@ -69,6 +70,24 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ExpenseGroupsGetSerializer
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [FirebaseAuthentication]
+
+    def get_queryset(self):
+        owner = self.request.user
+        groups = ExpenseGroups.objects.filter(owner=owner)
+        return groups
+
+    def create(self, request, *args, **kwargs):
+        owner = self.request.user
+        request.data['owner'] = owner.pk
+        serializer = serializers.ExpenseGroupsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(
+            data=self.serializer_class(instance).data,
+            status=HTTP_200_OK
+        )
+
+
 
     @action(methods=['post'], detail=True, url_path='add_user')
     @swagger_auto_schema(request_body=schemas.AddUserToGroupRequestSchema(),
