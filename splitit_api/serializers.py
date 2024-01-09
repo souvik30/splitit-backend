@@ -51,32 +51,10 @@ class BorrowersSerializer(serializers.ModelSerializer):
 
 
 class ExpensesSerializer(serializers.ModelSerializer):
-    spenders = SpendersSerializer(many=True)
-    borrowers = BorrowersSerializer(many=True)
 
     class Meta:
         model = Expenses
-        fields = ['id', 'group', 'name', 'description', 'date', 'owner', 'type', 'spenders', 'borrowers']
-
-    def create(self, validated_data):
-        spender_data = validated_data.pop('spenders')
-        borrower_data = validated_data.pop('borrowers')
-
-        expense = Expenses.objects.create(**validated_data)
-
-        for spender in spender_data:
-            spender['expense'] = expense.pk
-            spender_sz = SpendersSerializer(data=spender)
-            if spender_sz.is_valid():
-                spender_sz.save()
-
-        for borrower in borrower_data:
-            borrower['expense'] = expense.pk
-            borrower_sz = BorrowersSerializer(data=borrower)
-            if borrower_sz.is_valid():
-                borrower_sz.save()
-
-        return expense
+        fields = ['id', 'group', 'name', 'description', 'date', 'owner', 'type']
 
 
 class ExpensesGetSerializer(serializers.ModelSerializer):
