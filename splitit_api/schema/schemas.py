@@ -54,6 +54,59 @@ class MessageResponseSchema(Schema):
         )
 
 
+class ExpenseCreateSchema(Schema):
+    def __init__(self, **kwargs):
+        super().__init__(
+            type=TYPE_ARRAY,
+            items=Schema(
+                type=TYPE_OBJECT,
+                properties={
+                    'group': Schema(
+                        type=TYPE_NUMBER,
+                    ),
+                    'name': Schema(
+                        type=TYPE_STRING,
+                    ),
+                    'description': Schema(
+                        type=TYPE_STRING,
+                    ),
+                    'type': Schema(
+                        type=TYPE_STRING,
+                    ),
+                    'spenders': Schema(
+                        type=TYPE_ARRAY,
+                        items=Schema(
+                            type=TYPE_OBJECT,
+                            properties={
+                                'amount': Schema(
+                                    type=TYPE_STRING
+                                ),
+                                'owner': Schema(
+                                    type=TYPE_STRING
+                                )
+                            }
+                        )
+                    ),
+                    'borrowers': Schema(
+                        type=TYPE_ARRAY,
+                        items=Schema(
+                            type=TYPE_OBJECT,
+                            properties={
+                                'amount': Schema(
+                                    type=TYPE_STRING
+                                ),
+                                'owner': Schema(
+                                    type=TYPE_STRING
+                                )
+                            }
+                        )
+                    )
+                },
+            ),
+            **kwargs
+        )
+
+
 class GetBalancesResponseSchema(Schema):
     def __init__(self, **kwargs):
         super().__init__(

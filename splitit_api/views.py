@@ -14,7 +14,7 @@ from .authentication import get_firebase_uid, get_firebase_user, FirebaseAuthent
 from drf_yasg.utils import swagger_auto_schema
 from .schema import schemas
 from itertools import combinations
-from .utils import calculate_borrowers_amount
+from .utils import calculate_borrowers_amount, create_expense_with_spenders_and_borrowers
 
 
 class AuthViewSet(APIView):
@@ -157,42 +157,22 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
         )
 
 
-
-
 @swagger_auto_schema(query_serializer=serializers.ExpensesGetSerializer(),
-                     responses={200: serializers.ExpensesSerializer()})
+                     responses={200: serializers.ExpensesGetSerializer()})
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expenses.objects.all()
     serializer_class = serializers.ExpensesGetSerializer
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [FirebaseAuthentication]
 
+    @swagger_auto_schema(request_body=schemas.ExpenseCreateSchema(),
+                         responses={200: serializers.ExpensesGetSerializer()})
     def create(self, request, *args, **kwargs):
         owner = self.request.user
         data = request.data
-        data['owner'] = owner.id
+        data['owner'] = owner
 
-        spender_data = data.pop('spenders')
-        borrower_data = data.pop('borrowers')
+        expense = create_expense_with_spenders_and_borrowers(data)
 
-        szs = serializers.ExpensesSerializer(data=data)
-        if szs.is_valid():
-            expense = szs.save()
-
-            for spender in spender_data:
-                spender['expense'] = expense.id
-                spender_sz = serializers.SpendersSerializer(data=spender)
-                if spender_sz.is_valid():
-                    spender_sz.save()
-
-            for borrower in borrower_data:
-                borrower['expense'] = expense.id
-                borrower_sz = serializers.BorrowersSerializer(data=borrower)
-                if borrower_sz.is_valid():
-                    borrower_sz.save()
-
-            return Response(data=self.serializer_class(expense).data,
-                            status=HTTP_200_OK)
-        return Response(data={'error': 'Error creating expense'},
-                        status=HTTP_400_BAD_REQUEST)
-
+        return Response(data=self.serializer_class(expense).data,
+                        status=HTTP_200_OK)
