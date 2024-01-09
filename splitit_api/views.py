@@ -113,17 +113,19 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=True, url_path='expenses')
     @swagger_auto_schema(responses={200: serializers.ExpensesGetSerializer(many=True)})
     def expenses(self, request, pk=None):
-        expenses_for_group = ExpenseGroups.objects.filter(group=pk)
+        expense_group = self.get_object()
+        expenses_for_group = Expenses.objects.filter(group=expense_group)
 
         return Response(
-            data=serializers.ExpensesGetSerializer(data=expenses_for_group, many=True).data,
+            data=serializers.ExpensesGetSerializer(expenses_for_group, many=True).data,
             status=HTTP_200_OK
         )
 
     @action(methods=['get'], detail=True, url_path='balances')
     @swagger_auto_schema(responses={200: schemas.GetBalancesResponseSchema()})
     def balances(self, request, pk=None):
-        group_members = GroupMemberships.objects.filter(group=pk)
+        expense_group = self.get_object()
+        group_members = GroupMemberships.objects.filter(group=expense_group)
         users_list = [member.user.id for member in group_members]
         user_pairs = list(combinations(users_list, 2))
         response = []
