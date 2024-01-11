@@ -132,9 +132,9 @@ class ExpenseGroupsViewSet(viewsets.ModelViewSet):
         for pair in user_pairs:
             # calculate user A -> B
             user1, user2 = pair
-            user_2_borrowed_amount = calculate_borrowers_amount(user1, user2, users_list)
+            user_2_borrowed_amount = calculate_borrowers_amount(user1, user2, expense_group)
 
-            user_1_borrowed_amount = calculate_borrowers_amount(user2, user1, users_list)
+            user_1_borrowed_amount = calculate_borrowers_amount(user2, user1, expense_group)
 
             if user_1_borrowed_amount > 0 or user_2_borrowed_amount > 0:
 
